@@ -19,31 +19,38 @@
 #                                                                              #
 ################################################################################
 
-import sys
-from prime import *
-
-# For testing
-DRAGON = [(1,0), (2,0), (3,0), (5,0), (6,0), (3,1), (6,1), (0,2), (1,2), (3,2),\
-          (4,2), (4,4), (5,2), (6,2), (0,3), (6,3), (7,3), (0,4), (1,4), (2,4),\
-          (3,4), (5,4), (6,4), (7,4), (3,5), (6,5), (1,6), (3,6), (5,6), (6,6),\
-          (1,7), (2,7), (3,7)]
- 
 # -------------------- #
 # Handling polyominoes #
 # -------------------- #
 
 def canonical(p):
+    r"""
+    Returns a translated copy of this polyomino such that all
+    cells have positive coordinates touching the 0x and 0y axes
+    """
     mx = min(map(lambda v: v[0], p))
     my = min(map(lambda v: v[1], p))
     return sorted(map(lambda v: (v[0]-mx, v[1]-my), p))
 
 def rotate(p):
+    r"""
+    Returns the canonical polyomino obtained from self by a
+    rotation of angle `\\pi/2`
+    """
     return canonical(map(lambda v: (v[1], -v[0]), p))
 
 def reflect(p):
+    r"""
+    Returns the canonical polyomino obtained from self by a
+    reflection with respect to the 0x axis
+    """
     return canonical(map(lambda v: (v[0], -v[1]), p))
 
 def expand(p):
+    r"""
+    Returns the neighbouring cells of p, i.e. the cells
+    4-connected to p that do not belong to p
+    """
     result = []
     for (x,y) in p:
         for (dx,dy) in ((-1,0),(1,0),(0,-1),(0,1)):
@@ -52,10 +59,17 @@ def expand(p):
     return result
 
 def neighbors(cell):
+    r"""
+    Returns the four neighbours of the given cell
+    """
     (x,y) = cell
     return [(x+1,y),(x,y+1),(x-1,y),(x,y-1)]
 
 def has_hole(polyomino):
+    r"""
+    Returns True if the given polyomino has a hole, i.e.
+    its complement is not 4-connected
+    """
     w = max(map(lambda c: c[0], polyomino))
     h = max(map(lambda c: c[1], polyomino))
     complement = [(x,y) for x in xrange(-1, w+2) for y in xrange(-1,h+2) if (x,y) not in polyomino]
@@ -70,6 +84,10 @@ def has_hole(polyomino):
     return len(visited) != len(complement)
 
 def polyomino_to_boundary_word(polyomino):
+    r"""
+    Returns a boundary word associated with the given
+    polyomino
+    """
     w = max(map(lambda c: c[0], polyomino))
     h = max(map(lambda c: c[1], polyomino))
     (x,y) = min(polyomino, key=lambda c: (c[1] != 0, c[0]))
@@ -81,12 +99,20 @@ def polyomino_to_boundary_word(polyomino):
     return q1 + q2 + q3 + q4
 
 def neighbour((x,y), s):
+    r"""
+    Returns the neighbour of cell ``(x,y)`` according to
+    the current step ``s``
+    """
     if   s == 0: return (x + 1, y)
     elif s == 1: return (x, y + 1)
     elif s == 2: return (x - 1, y)
     elif s == 3: return (x, y - 1)
 
 def quarter_word(polyomino, w, h, x, y, s):
+    r"""
+    Returns a word path surrounding the given polyomino
+    according to the main direction ``s``
+    """
     word = [s]
     if   s == 0: condition = lambda (x,y,w,h): x != w
     elif s == 1: condition = lambda (x,y,w,h): y != h
@@ -111,6 +137,10 @@ def quarter_word(polyomino, w, h, x, y, s):
 # --------- #
 
 def polyomino_iterator(max_cells):
+    r"""
+    Returns an iterator over all boundary words together with
+    the polyomino it describes with increasing area
+    """
     yield ('0123',[(0,0)])
     polyominoes = [[(0,0)]]
     for _ in xrange(0, max_cells - 1):
@@ -131,6 +161,10 @@ def polyomino_iterator(max_cells):
         polyominoes = new_polyominoes
 
 def polyominoes_iterator_from_file(input_filename):
+    r"""
+    Iterates over the polyominoes listed in the given
+    file
+    """
     import ast
     input = open(input_filename, 'r')
     for line in input:
@@ -143,6 +177,10 @@ def polyominoes_iterator_from_file(input_filename):
     input.close()
 
 def composed_polyominoes_iterator_from_file(input_filename):
+    r"""
+    Iterates over all composed polyominoes filtered from
+    those picked in some file
+    """
     for (word,polyomino) in polyominoes_iterator_from_file(input_filename):
         bw = BoundaryWord(word) 
         if not bw.is_prime():
@@ -153,6 +191,9 @@ def composed_polyominoes_iterator_from_file(input_filename):
 # -------------- #
 
 def write_free_polyominoes_to_file(max_cells, output_filename=None, sorted=True):
+    r"""
+    Saves a list of polyomino in some file
+    """
     if output_filename is None:
         output_filename = 'free-polyomino-%s.txt'%max_cells
     f = open(output_filename, 'w')
@@ -164,6 +205,9 @@ def write_free_polyominoes_to_file(max_cells, output_filename=None, sorted=True)
     f.close()
 
 def write_composed_polyominoes_to_file(input_filename, output_filename=None):
+    r"""
+    Saves a list of composed polyomino in some file
+    """
     if output_filename is None:
         output_filename = 'composed-polyomino.txt'
     f = open(output_filename, 'w')
@@ -178,6 +222,10 @@ def write_composed_polyominoes_to_file(input_filename, output_filename=None):
 # ----------- #
 
 def tikz(word, polyomino):
+    r"""
+    Returns a string that allows one to draw a polyomino with
+    tikz
+    """
     s = ''
     for c in polyomino:
         cp = (c[0] + 1, c[1] + 1)
@@ -196,6 +244,10 @@ def tikz(word, polyomino):
     return s
 
 def tikz_polyomino_matrix(polyominoes, num_cols=10, col_width=10, row_height=10):
+    r"""
+    Returns a string that allows one to draw an array of polyominoes
+    with tikz
+    """
     s = '\\begin{tikzpicture}[cell/.style={fill=black!20, densely dotted}, boundary/.style={very thick}]\n'
     i = 0
     for (boundary_word,polyomino) in polyominoes:
@@ -215,7 +267,23 @@ def tikz_polyomino_matrix(polyominoes, num_cols=10, col_width=10, row_height=10)
 # ---- #
 # Main #
 # ---- #
+r"""
+The current file can be used as a script for either generating list
+of polyominoes, composed polyominoes or tikz code for displaying
+purposes
 
+Type ``./enumeration.py --help`` to get some help.
+"""
+
+import sys
+from prime import *
+
+# For testing
+DRAGON = [(1,0), (2,0), (3,0), (5,0), (6,0), (3,1), (6,1), (0,2), (1,2), (3,2),\
+          (4,2), (4,4), (5,2), (6,2), (0,3), (6,3), (7,3), (0,4), (1,4), (2,4),\
+          (3,4), (5,4), (6,4), (7,4), (3,5), (6,5), (1,6), (3,6), (5,6), (6,6),\
+          (1,7), (2,7), (3,7)]
+ 
 from argparse import ArgumentParser
 import os
 import subprocess

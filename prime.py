@@ -89,7 +89,7 @@ Class for representing boundary words, i.e.
 words on the alphabet {0,1,2,3} describin the
 boundary of a discrete region.
 """
-class BoundaryWord:
+class BoundaryWord(list):
 
     def __init__(self, word):
         r"""
@@ -99,9 +99,9 @@ class BoundaryWord:
         self._word = word
         if not self._is_freeman_word():
             raise ValueError, 'Word must be a list of integers between 0 and 3'
-        elif not is_closed(self._word):
+        elif not self.is_closed():
             raise ValueError, 'Boundary word is not closed'
-        elif not is_simple(self._word[:-1]):
+        elif not self.is_simple():
             raise ValueError, 'Boundary word is not simple'
 
     def _is_freeman_word(self):
@@ -120,9 +120,6 @@ class BoundaryWord:
         """
         return 'Boundary word of length %s over {0,1,2,3}' % len(self._word)
 
-    def __getitem__(self, i):
-        return self._word[i]
-
     def turning_number(self):
         r"""
         Returns the turning number of self
@@ -136,6 +133,45 @@ class BoundaryWord:
                 n -= 1
             i += 1
         return n / 4
+
+    def is_simple(self):
+        r"""
+        Returns True if and only if the given word induces a 
+        self-avoiding path
+        """
+        points = {(0,0): True}
+        x = y = 0
+        for letter in self[:-1]:
+            if letter == 0:
+                x += 1
+            elif letter == 1:
+                y += 1
+            elif letter == 2:
+                x -= 1
+            elif letter == 3:
+                y -= 1
+            if (x,y) in points:
+                return False
+            points[(x,y)] = True
+        return True 
+    
+    def is_closed(self):
+        r"""
+        Returns True if and only if the numbers of 0's and 2'
+        are the same and the numbers of 1's and 3's are the
+        same
+        """
+        x = y = 0
+        for letter in self:
+            if letter == 0:
+                x += 1
+            elif letter == 1:
+                y += 1
+            elif letter == 2:
+                x -= 1
+            elif letter == 3:
+                y -= 1
+        return x == 0 and y == 0
 
     def occurrences_iterator(self, letter, i):
         r"""
@@ -200,122 +236,4 @@ class BoundaryWord:
                     if phi is not None and self._is_non_trivial_factorization(phi):
                         return phi
                 return None
-
-# ---------------------- #
-# Generating polyominoes #
-# ---------------------- #
-
-def is_simple(word):
-    r"""
-    Returns True if and only if the given word induces a 
-    self-avoiding path
-    """
-    points = {(0,0): True}
-    x = y = 0
-    for letter in word:
-        if letter == 0:
-            x += 1
-        elif letter == 1:
-            y += 1
-        elif letter == 2:
-            x -= 1
-        elif letter == 3:
-            y -= 1
-        if (x,y) in points:
-            return False
-        points[(x,y)] = True
-    return True 
-
-def is_closed(word):
-    r"""
-    Returns True if and only if the numbers of 0's and 2'
-    are the same and the numbers of 1's and 3's are the
-    same
-    """
-    x = y = 0
-    for letter in word:
-        if letter == 0:
-            x += 1
-        elif letter == 1:
-            y += 1
-        elif letter == 2:
-            x -= 1
-        elif letter == 3:
-            y -= 1
-    return x == 0 and y == 0
-
-def simple_words_iterator(length):
-    r"""
-    Returns an iterator over all simple words of given
-    length, i.e.  words inducing self-avoiding paths
-    in the discrete plane
-    """
-    if length == 1:
-        for letter in FREEMAN:
-            yield (letter,)
-    else:
-        yielded = {}
-        for i in range(1, length):
-            first_halves = simple_words_iterator(i)
-            for first_half in first_halves:
-                second_halves = simple_words_iterator(length - i)
-                for second_half in second_halves:
-                    word = first_half + second_half
-                    if word not in yielded and is_simple(word[:-1]):
-                        yielded[word] = True
-                        yield word
-
-def boundary_word_iterator(max_length):
-    r"""
-    Returns an iterator over all boundary words having
-    given maximum length
-    """
-    for length in range(4, max_length + 1, 2):
-        for word in simple_words_iterator(length):
-            if is_closed(word):
-                yield word
-
-# ---- #
-# Test #
-# ---- #
-
-def is_prime(n):
-    from math import sqrt
-    for i in range(2, int(sqrt(n)) + 1):
-        if n % i == 0:
-            return False
-    return n >= 2
-
-def test_linear_figures(n):
-    for i in range(2, n):
-        w = BoundaryWord([0]*i + [1] + [2]*i + [3])
-        phi = w.factorize()
-        if phi is None:
-            if not is_prime(i):
-                print i
-        else:
-            if is_prime(i):
-                print i
-
-def prime_polyominoes_iterator(max_length):
-    from itertools import ifilter
-    return ifilter(lambda w: BoundaryWord(w).is_prime(), boundary_word_iterator(max_length))
-
-def is_lyndon(word):
-    found = {}
-    for (i,letter) in enumerate(word):
-        if letter not in found:
-            for j in range(letter):
-                if j not in found:
-                    return False
-            found[letter] = True
-            if len(found) == 4:
-                return True
-    return True
-
-def composed_lyndon_boudary_word_iterator(max_length):
-    for w in boundary_word_iterator(max_length):
-        bw = BoundaryWord(w)
-        if is_lyndon(w) and not bw.is_prime():
-            yield w
 
